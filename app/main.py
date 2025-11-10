@@ -8,6 +8,10 @@ import os
 
 app = FastAPI()
 
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
+
 # static（ロゴ等）
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
