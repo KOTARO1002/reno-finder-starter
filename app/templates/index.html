@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>中古×リノベ 物件探しアプリ（試作）</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", YuGothic, "Yu Gothic", "Meiryo", sans-serif; background:#f7fafc; margin:0; }
+    .container{ max-width:1200px; margin:24px auto; padding:0 16px; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:24px; }
+    .card{ background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+    h2{ font-size:18px; margin:0 0 12px; }
+    label{ display:block; font-size:13px; color:#374151; margin:10px 0 4px; }
+    input[type="number"], input[type="text"], select, textarea {
+      width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;
+    }
+    textarea{ min-height:100px; }
+    .btn{ background:#2563eb; color:#fff; padding:10px 14px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+    .btn-gray{ background:#475569; }
+    .btn-green{ background:#059669; }
+    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .pill{ background:#eef2ff; color:#312e81; padding:4px 8px; border-radius:9999px; font-size:12px; }
+    .stat{ background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:12px; }
+    .stat b{ font-size:20px; color:#065f46; }
+    .listing{ border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin:10px 0; background:#fff; }
+    .listing h4{ margin:0 0 6px; font-size:16px; }
+    .note{ white-space:pre-wrap; background:#0f172a; color:#e2e8f0; padding:10px; border-radius:8px; font-size:12px; }
+    .muted{ color:#64748b; font-size:12px; }
+    .two{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="grid">
+
+    <!-- 左：入力 -->
+    <div class="card">
+      <h2>① 資金条件</h2>
+      <label>自己資金（万円）</label>
+      <input id="shikin" type="number" step="1" value="{{ default.shikin }}" />
+      <label>月々の支払可能額（万円・小数1桁まで）</label>
+      <input id="monthly" type="number" step="0.1" value="{{ default.monthly }}" />
+      <label>金利（%）小数点第3位まで</label>
+      <input id="rate" type="number" step="0.001" value="{{ default.rate }}" />
+      <label>必要㎡数（整数）</label>
+      <input id="need_m2" type="number" step="1" value="{{ default.need_m2 }}" />
+      <label>借入期間（年・最大50）</label>
+      <input id="years" type="number" step="1" value="{{ default.years }}" />
+
+      <label>リノベーション方式</label>
+      <div class="row">
+        <label><input type="radio" name="reno_mode" value="full" checked /> フルリノベ</label>
+        <label><input type="radio" name="reno_mode" value="partial" /> 部分リノベ</label>
+      </div>
+
+      <div id="renoInputWrap" style="display:none;">
+        <label>部分リノベ費用（万円）</label>
+        <input id="reno_input" type="number" step="1" value="{{ default.reno_input }}" />
+      </div>
+
+      <div style="margin-top:12px;">
+        <button id="calcBtn" class="btn">計算する</button>
+      </div>
+      <p class="muted">※ 諸費用率は現在 <b>{{ '%.4f' % fee_rate }}</b> に設定。</p>
+    </div>
+
+    <!-- 右：結果/条件 -->
+    <div class="card">
+      <h2>② 計算結果</h2>
+      <div class="two">
+        <div class="stat">総借入額（万円）<br><b id="borrow_total">-</b></div>
+        <div class="stat">リノベ費用（万円）<br><b id="reno_cost">-</b></div>
+        <div class="stat">諸費用（万円）<br><b id="fees">-</b></div>
+        <div class="stat">購入可能物件価格（万円）<br><b id="price_max">-</b></div>
+      </div>
+
+      <h2 style="margin-top:18px;">③ 条件（自然言語）</h2>
+      <textarea id="freeText" placeholder="例）ペット可、堺市堺区、駅徒歩15分以内、80㎡以上など"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button id="jsonBtn" class="btn btn-green">条件をJSON化</button>
+        <button id="pdfBtn" class="btn btn-gray">PDFにする（印刷）</button>
+        <button id="previewBtn" class="btn btn-gray">印刷用プレビュー</button>
+      </div>
+      <pre id="conditionsOut" class="note" style="margin-top:10px;"></pre>
+
+      <h2 style="margin-top:18px;">④ 物件候補（β）</h2>
+      <div class="row" style="margin-bottom:8px;">
+        <button id="searchBtn" class="btn">物件候補を探す（β）</button>
+        <button id="exportBtn" class="btn btn-gray">CSVでダウンロード</button>
+      </div>
+      <div id="listings"></div>
+      <div id="note" class="note" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fmt = (v) => (v===null||v===undefined||Number.isNaN(v)) ? "-" : new Intl.NumberFormat('ja-JP',{maximumFractionDigits:1}).format(v);
+
+  // ラジオで部分リノベ費用の表示切替
+  document.querySelectorAll('input[name="reno_mode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      $('renoInputWrap').style.display = (document.querySelector('input[name="reno_mode"]:checked').value === 'partial') ? 'block' : 'none';
+    });
+  });
+
+  // 1) 計算
+  $('calcBtn').addEventListener('click', async () => {
+    try {
+      const fd = new FormData();
+      fd.append('shikin', $('shikin').value);
+      fd.append('monthly', $('monthly').value);
+      fd.append('rate', $('rate').value);
+      fd.append('need_m2', $('need_m2').value);
+      fd.append('years', $('years').value);
+      fd.append('reno_mode', document.querySelector('input[name="reno_mode"]:checked').value);
+      fd.append('reno_input', $('reno_input').value || 0);
+
+      const res = await fetch('/calc', { method:'POST', body:fd });
+      const data = await res.json();
+      if(!data.ok) throw new Error('calc failed');
+
+      $('borrow_total').textContent = fmt(data.borrow_total_man);
+      $('reno_cost').textContent    = fmt(data.reno_cost_man);
+      $('fees').textContent         = fmt(data.fees_man);
+      $('price_max').textContent    = fmt(data.price_max_man);
+
+      // 保存（③④で使う）
+      window.__calc = data;
+
+    } catch(e){
+      console.error(e);
+      alert('計算に失敗しました。入力値をご確認ください。');
+    }
+  });
+
+  // 2) 条件をJSON化
+  $('jsonBtn').addEventListener('click', async () => {
+    try {
+      const calc = window.__calc;
+      if(!calc){ alert('先に「計算する」を押してください。'); return; }
+      const body = {
+        free_text: $('freeText').value || '',
+        price_max_man: calc.price_max_man,
+        need_m2: Number($('need_m2').value)
+      };
+      const res = await fetch('/parse-conditions', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+      });
+      const data = await res.json();
+      window.__conditions = data.conditions; // 保存
+      $('conditionsOut').textContent = JSON.stringify(data.conditions, null, 2) + `\n(mode: ${data.mode})`;
+    } catch(e){
+      console.error(e);
+      alert('条件のJSON化に失敗しました。');
+    }
+  });
+
+  // 3) 印刷用
+  $('previewBtn').addEventListener('click', () => {
+    const calc = window.__calc;
+    if(!calc){ alert('先に「計算する」を押してください。'); return; }
+    const q = new URLSearchParams({
+      shikin: $('shikin').value,
+      monthly: $('monthly').value,
+      rate: $('rate').value,
+      need_m2: $('need_m2').value,
+      years: $('years').value,
+      reno_mode: document.querySelector('input[name="reno_mode"]:checked').value,
+      reno_input: $('reno_input').value || 0,
+      borrow_total_man: calc.borrow_total_man,
+      reno_cost_man: calc.reno_cost_man,
+      fees_man: calc.fees_man,
+      price_max_man: calc.price_max_man
+    }).toString();
+    window.open('/report?'+q, '_blank');
+  });
+  $('pdfBtn').addEventListener('click', ()=> window.print());
+
+  // 4) 物件候補（β）
+  function renderListings(items){
+    const box = $('listings');
+    box.innerHTML = '';
+    items.forEach(it => {
+      const div = document.createElement('div');
+      div.className = 'listing';
+      div.innerHTML = `
+        <h4><a href="${it.url}" target="_blank" rel="noopener">${it.title || '（タイトル不明）'}</a></h4>
+        <div class="row">
+          <span class="pill">価格: ${fmt(it.price_man)} 万円</span>
+          <span class="pill">面積: ${fmt(it.m2)} ㎡</span>
+          ${it.age!=null ? `<span class="pill">築${it.age}年</span>` : ``}
+          ${it.walk!=null ? `<span class="pill">徒歩${it.walk}分</span>` : ``}
+          ${it.address ? `<span class="pill">${it.address}</span>` : ``}
+        </div>
+        ${it.snippet ? `<div class="muted" style="margin-top:6px;">…${it.snippet}…</div>` : ``}
+      `;
+      box.appendChild(div);
+    });
+  }
+
+  $('searchBtn').addEventListener('click', async () => {
+    try{
+      const cond = window.__conditions;
+      if(!cond){ alert('先に「条件をJSON化」を押してください。'); return; }
+      $('searchBtn').disabled = true;
+      const res = await fetch('/find-listings', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ conditions: cond })
+      });
+      const data = await res.json();
+      $('searchBtn').disabled = false;
+
+      window.__lastListings = data.items || [];
+      renderListings(window.__lastListings);
+
+      $('note').style.display = 'block';
+      $('note').textContent = data.note || '';
+    }catch(e){
+      $('searchBtn').disabled = false;
+      console.error(e);
+      alert('検索に失敗しました。APIキーやCSE設定をご確認ください。');
+    }
+  });
+
+  // CSV
+  $('exportBtn').addEventListener('click', async () => {
+    const items = window.__lastListings || [];
+    if(!items.length){ alert('まず「物件候補を探す（β）」を実行してください。'); return; }
+    try{
+      const res = await fetch('/export-csv', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(items)
+      });
+      if(!res.ok) throw new Error('export failed');
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'listings.csv';
+      document.body.appendChild(a);
+      a.click(); a.remove();
+    }catch(e){
+      console.error(e);
+      alert('CSV作成に失敗しました。');
+    }
+  });
+
+</script>
+</body>
+</html>

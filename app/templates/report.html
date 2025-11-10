@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="print:p-0">
+  <h1 class="text-2xl font-bold mb-4">資金計画レポート</h1>
+
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="bg-white rounded-2xl border p-4">
+      <h2 class="font-semibold mb-2">入力</h2>
+      <div class="text-sm space-y-1">
+        <div>自己資金：{{ data.shikin }} 万円</div>
+        <div>月々の支払可能額：{{ data.monthly }} 万円</div>
+        <div>金利：{{ data.rate }} %</div>
+        <div>必要㎡数：{{ data.need_m2 }} ㎡</div>
+        <div>借入期間：{{ data.years }} 年</div>
+        <div>方式：{{ 'フルリノベ' if data.reno_mode=='full' else '部分リノベ' }}</div>
+        {% if data.reno_mode=='partial' %}
+        <div>部分リノベ費用：{{ data.reno_input }} 万円</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="bg白 rounded-2xl border p-4">
+      <h2 class="font-semibold mb-2">計算結果</h2>
+      <div class="text-sm space-y-1">
+        <div>総借入額：<strong>{{ data.borrow_total_man }}</strong> 万円</div>
+        <div>リノベ費用：<strong>{{ data.reno_cost_man }}</strong> 万円</div>
+        <div>諸費用（率 {{ '%.2f' % (data.fee_rate*100) }}%）：<strong>{{ data.fees_man }}</strong> 万円</div>
+        <div>購入可能物件価格：<strong class="text-emerald-700">{{ data.price_max_man }}</strong> 万円</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-xs text-slate-500">
+    ※ 諸費用率は現在 <code>{{ '%.4f' % data.fee_rate }}</code>（= {{ '%.2f' % (data.fee_rate*100) }}%）。仕様上は0.07%。一般的な7%に変更する場合は <code>.env</code> の <code>FEE_RATE</code> を <code>0.07</code> に設定してください。
+  </div>
+</div>
+{% endblock %}
