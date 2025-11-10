@@ -7,6 +7,9 @@ from typing import Optional, Literal
 import os
 
 app = FastAPI()
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
 
 # static（ロゴ等）
 os.makedirs("static", exist_ok=True)
