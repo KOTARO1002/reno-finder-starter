@@ -7,16 +7,13 @@ from typing import Optional, Literal
 import os
 
 app = FastAPI()
-@app.get("/healthz")
-def healthz():
-    return {"ok": True}
 
 # static（ロゴ等）
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 設定
-FEE_RATE = float(os.getenv("FEE_RATE", "0.08"))
+FEE_RATE = float(os.getenv("FEE_RATE", "0.08"))  # ← 8%
 TAX_RATE  = float(os.getenv("TAX_RATE",  "0.10"))
 
 # 計算ユーティリティ
@@ -93,26 +90,25 @@ def root():
     .valuebox { background:#F8FAFC; border-radius:.5rem; padding:.75rem 1rem; font-weight:600; }
     .kpi { font-size:1.25rem; }
     .hint { color:#6B7280; font-size:.85rem; }
-    /* ラジオ行の手入力欄はラベル無し・右横に配置 */
-    .manual-input { width: 12rem; }            /* 画面幅に応じて調整 */
+    /* 手入力欄：ラベル無しでラジオ右側に */
+    .manual-input { width: 12rem; }
     @media (min-width: 1024px) { .manual-input { width: 16rem; } }
-    /* 左右の下端を常に揃える（A案：自動連動） */
-    .grid-stretch { align-items: stretch; }    /* 親グリッドで各列の高さを揃える */
-    .left-col-box { height: 100%; }            /* 左の大ボックスを列の高さに合わせて伸ばす */
-    .right-col     { display:flex; flex-direction:column; height:100%; } /* 右列を縦フレックス */
-    .kpi-area      { /* 上部KPIは高さなり */ }
-    .memo-wrap     { flex:1 1 auto; display:flex; flex-direction:column; }
-    .memo-box      { flex:1 1 auto; min-height: 12rem; } /* KPIが少ない時の最低高だけ確保 */
+    /* 左右の下端を常に揃える */
+    .grid-stretch { align-items: stretch; }
+    .left-col-box { height: 100%; }
+    .right-col { display:flex; flex-direction:column; height:100%; }
+    .memo-wrap { flex:1 1 auto; display:flex; flex-direction:column; }
+    .memo-box  { flex:1 1 auto; min-height: 12rem; }
+    /* フッターロゴ：スマホは中央、PCは右寄せでページ最下部に配置（重ならない） */
+    .footer-rail { margin-top: 2rem; }
   </style>
 </head>
 <body class="p-4">
   <div class="max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">中古×リノベ 資金計画シミュレーター</h1>
 
-    <!-- 親グリッドで items-stretch（= grid-stretch） -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 grid-stretch">
-
-      <!-- 左：入力（この .box を列の高さに合わせて100%に） -->
+      <!-- 左：入力 -->
       <div class="left-col-box box">
         <h2 class="font-semibold mb-2">① 条件入力</h2>
 
@@ -136,7 +132,7 @@ def root():
           <input id="bonus_man" type="number" step="0.1" class="valuebox" placeholder="例：10" />
         </div>
 
-        <!-- リノベ方式（右横にラベル無しの手入力欄を配置） -->
+        <!-- リノベ方式：右横に手入力欄（ラベル無し） -->
         <div class="mt-4">
           <span class="label mb-1">リノベ方式</span>
           <div class="flex flex-wrap items-end gap-4">
@@ -149,9 +145,8 @@ def root():
               <span>リノベ費用手入力</span>
             </label>
 
-            <!-- ラベル無しの手入力欄（青枠位置） -->
-            <input id="reno_cost_input_man"
-                   type="number" step="0.1"
+            <!-- 手入力欄（青枠位置） -->
+            <input id="reno_cost_input_man" type="number" step="0.1"
                    class="valuebox manual-input ml-auto hidden" placeholder="例：800" />
           </div>
         </div>
@@ -162,32 +157,29 @@ def root():
 
       <!-- 右：KPI + メモ（右列全体で高さ100% → メモが残りを埋める） -->
       <div class="right-col">
-        <div class="kpi-area">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="box">
-              <div class="label">総借入額（万円）</div>
-              <div id="total_loan" class="valuebox kpi">-</div>
-            </div>
-            <div class="box">
-              <div class="label">リノベ費（税抜・万円）</div>
-              <div id="reno_cost" class="valuebox kpi">-</div>
-            </div>
-            <div class="box">
-              <div class="label">リノベ費（税込10%・万円）</div>
-              <div id="reno_cost_tax_incl" class="valuebox kpi">-</div>
-            </div>
-            <div class="box">
-              <div class="label">諸費用（万円）</div>
-              <div id="fee_cost" class="valuebox kpi">-</div>
-            </div>
-            <div class="box">
-              <div class="label">購入可能物件価格（万円）</div>
-              <div id="buyable" class="valuebox kpi text-emerald-600">-</div>
-            </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="box">
+            <div class="label">総借入額（万円）</div>
+            <div id="total_loan" class="valuebox kpi">-</div>
+          </div>
+          <div class="box">
+            <div class="label">リノベ費（税抜・万円）</div>
+            <div id="reno_cost" class="valuebox kpi">-</div>
+          </div>
+          <div class="box">
+            <div class="label">リノベ費（税込10%・万円）</div>
+            <div id="reno_cost_tax_incl" class="valuebox kpi">-</div>
+          </div>
+          <div class="box">
+            <div class="label">諸費用（万円）</div>
+            <div id="fee_cost" class="valuebox kpi">-</div>
+          </div>
+          <div class="box">
+            <div class="label">購入可能物件価格（万円）</div>
+            <div id="buyable" class="valuebox kpi text-emerald-600">-</div>
           </div>
         </div>
 
-        <!-- メモが残りスペースを flex:1 で埋めるので、左のボックスと下端が自動で揃う -->
         <div class="memo-wrap mt-4">
           <div class="box" style="display:flex; flex-direction:column; height:100%;">
             <h2 class="font-semibold mb-2">② メモ欄</h2>
@@ -197,13 +189,16 @@ def root():
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- ロゴ（任意） -->
-    <div class="absolute bottom-4 right-0 opacity-80 pointer-events-none select-none">
-      <img src="/static/SHロゴ横長.png" alt="logo" class="h-10" />
-    </div>
+    <!-- フッター（最下部）：スマホ中央／PCは右寄せ -->
+    <footer class="footer-rail">
+      <div class="max-w-6xl mx-auto px-2">
+        <div class="flex justify-center md:justify-end items-center">
+          <img src="/static/SHロゴ横長.png" alt="logo" class="h-10 md:h-12 opacity-90" />
+        </div>
+      </div>
+    </footer>
   </div>
 
   <script>
@@ -219,7 +214,7 @@ def root():
       return await r.json();
     }
 
-    // ラジオ切替：manual時のみ手入力欄を表示（右横、ラベル無し）
+    // ラジオ切替：manual時のみ手入力欄を表示
     function updateManualVisibility(){
       const mode = document.querySelector('input[name="reno"]:checked').value;
       const input = document.getElementById('reno_cost_input_man');
@@ -272,8 +267,10 @@ def root():
 def calc(req: CalcReq):
     if req.self_man < 0 or req.monthly_man <= 0 or req.rate_percent < 0 or req.area_need_m2 <= 0:
         return JSONResponse({"ok": False, "detail": "入力値を確認してください。"}, status_code=400)
+
     total_loan = loan_capacity_by_payments(req.monthly_man, req.bonus_man, req.rate_percent, req.years)
 
+    # リノベ費（税抜 or 手入力）
     if req.reno_mode == "full":
         reno_cost = full_renovation_cost(req.area_need_m2)
     else:
@@ -281,18 +278,21 @@ def calc(req: CalcReq):
             return JSONResponse({"ok": False, "detail": "リノベ費用（手入力・万円）を入力してください。"}, status_code=400)
         reno_cost = float(req.reno_cost_input_man)
 
+    # 税込を採用して式の整合を取る
     reno_cost_tax_incl = reno_cost * (1.0 + TAX_RATE)
 
-    disposable = req.self_man + total_loan - reno_cost
+    # ★ここを修正：税抜ではなく税込を控除
+    disposable = req.self_man + total_loan - reno_cost_tax_incl
+
     purch_price = solve_purchase_price(disposable, FEE_RATE)
     fee = purch_price * FEE_RATE
 
-    return CalcRes(
-        ok=True,
-        total_loan_man=round(total_loan, 1),
-        reno_cost_man=round(reno_cost, 1),
-        reno_cost_tax_incl_man=round(reno_cost_tax_incl, 1),
-        fee_man=round(fee, 1),
-        purchasable_price_man=round(purch_price, 1),
-        memo_text=req.memo_text or "",
-    )
+    return JSONResponse({
+        "ok": True,
+        "total_loan_man": round(total_loan, 1),
+        "reno_cost_man": round(reno_cost, 1),
+        "reno_cost_tax_incl_man": round(reno_cost_tax_incl, 1),
+        "fee_man": round(fee, 1),
+        "purchasable_price_man": round(purch_price, 1),
+        "memo_text": req.memo_text or "",
+    })
