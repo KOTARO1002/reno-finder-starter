@@ -127,63 +127,6 @@ def root():
     .kpi-input { border:none; outline:none; background:#F8FAFC; width:100%; }
     .manual-input { width:12rem; }
     @media (min-width: 1024px){ .manual-input{ width:16rem; } }
-
-    /* 印刷（PDF化）最適化 */
-    @media print {
-      /* A4 1枚に収める（縮小98%を不要に寄せる） */
-      @page { size: A4 portrait; margin: 8mm; }
-
-      html, body { background:#fff !important; }
-      body { padding: 0 !important; }
-
-      /* ブラウザが色を落としがちなので、残せる環境では残す */
-      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-      /* 余白・文字サイズを少し締める */
-      h1 { font-size: 16pt !important; margin-bottom: 10px !important; }
-
-      .main-grid { gap: 10px !important; grid-template-columns: 1fr 1fr !important; }
-      .results-grid { gap: 10px !important; }
-      .input-grid { gap: 8px !important; }
-
-      .box {
-        padding: 10px !important;
-        border: 1px solid #111827 !important; /* 線を強めに */
-        box-shadow: none !important;
-      }
-
-      /* 背景色が消えても読めるように、枠線で視認性を担保 */
-      .valuebox {
-        background: #fff !important;
-        border: 1px solid #9ca3af !important;
-        padding: 8px 10px !important;
-      }
-
-      /* KPIは少しだけ小さくして縦方向を圧縮 */
-      .kpi { font-size: 1.05rem !important; }
-
-      /* 購入可能価格を“線で目立たせる” */
-      #buyable {
-        color: #065f46 !important;
-        border: 2px solid #065f46 !important;
-      }
-
-      /* 入力ボタンなど、印刷に不要なものは非表示 */
-      #calc_btn { display: none !important; }
-
-      /* テキストエリアは罫線をしっかり */
-      textarea {
-        border: 1px solid #111827 !important;
-        border-radius: 8px !important;
-        min-height: 110px !important;
-      }
-
-      /* フッターを詰める */
-      footer { margin-top: 8px !important; padding-bottom: 0 !important; }
-
-      /* 変な改ページを避ける */
-      .box, .results-grid { break-inside: avoid; page-break-inside: avoid; }
-    }
   </style>
 </head>
 <body class="p-4">
@@ -191,11 +134,11 @@ def root():
   <div class="max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">中古×リノベ 資金計画シミュレーター</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 main-grid">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
       <!-- 左側：入力 -->
       <div class="box">
-        <div class="grid grid-cols-2 gap-3 input-grid">
+        <div class="grid grid-cols-2 gap-3">
           <label class="label">自己資金（万円）</label>
           <input id="self_man" type="number" step="0.1" class="valuebox" placeholder="例：300"/>
 
@@ -245,7 +188,7 @@ def root():
       <!-- 右側：結果 -->
       <div class="flex flex-col gap-4">
 
-        <div class="grid grid-cols-2 gap-4 results-grid">
+        <div class="grid grid-cols-2 gap-4">
 
           <div class="box">
             <div class="label">総借入額（万円）</div>
