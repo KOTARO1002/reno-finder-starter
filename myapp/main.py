@@ -118,125 +118,275 @@ def root():
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>中古×リノベ 資金計画シミュレーター</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { background:#F1F5F9 }
-    .box { border:1px solid #e5e7eb; border-radius:.75rem; padding:1rem; background:white; }
-    .label { color:#374151; font-size:.9rem; margin-bottom:.25rem; display:block; }
-    .valuebox { background:#F8FAFC; border-radius:.5rem; padding:.75rem 1rem; font-weight:600; width:100%; }
-    .kpi { font-size:1.25rem; }
-    .kpi-input { border:none; outline:none; background:#F8FAFC; width:100%; }
-    .manual-input { width:12rem; }
-    @media (min-width: 1024px){ .manual-input{ width:16rem; } }
+    html, body {
+      font-family: 'Inter', system-ui, -apple-system, "Helvetica Neue",
+                   "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+    body { background: #F8FAFC; color: #0F172A; }
+    .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #E2E8F0;
+      border-radius: 1rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .card-pad { padding: 1.25rem; }
+
+    .label-sm {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748B;
+      font-weight: 600;
+    }
+    .field-label {
+      font-size: 0.875rem;
+      color: #334155;
+      font-weight: 500;
+    }
+
+    .field-input {
+      width: 100%;
+      background: #F8FAFC;
+      border: 1px solid transparent;
+      border-radius: 0.5rem;
+      padding: 0.625rem 0.875rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .field-input:focus {
+      outline: none;
+      border-color: #10B981;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    .kpi-num {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .hero-num {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #059669;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+    }
+    @media (min-width: 768px) { .hero-num { font-size: 3.75rem; } }
+    .hero-unit {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #047857;
+      margin-left: 0.5rem;
+    }
+
+    .btn-primary {
+      background: #0F172A;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    }
+    .btn-primary:hover { background: #1E293B; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .info-tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+      border-radius: 9999px;
+      background: #E2E8F0;
+      color: #475569;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: help;
+      user-select: none;
+    }
+    .info-tip:hover::after,
+    .info-tip:focus::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 130%;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      background: #0F172A;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.375rem 0.625rem;
+      border-radius: 0.375rem;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+    }
+
+    .reno-manual-input { width: 12rem; }
+    @media (min-width: 1024px) { .reno-manual-input { width: 16rem; } }
+
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    .chevron { transition: transform 0.2s ease; display: inline-block; }
+    details[open] .chevron { transform: rotate(90deg); }
   </style>
 </head>
-<body class="p-4">
+<body class="antialiased">
 
-  <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold mb-4">中古×リノベ 資金計画シミュレーター</h1>
+  <div class="max-w-6xl mx-auto px-4 py-6 md:py-8">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
+        中古×リノベ 資金計画シミュレーター
+      </h1>
+      <p class="mt-1 text-sm text-slate-500">
+        条件を入力すると、購入可能な物件価格を自動で逆算します。
+      </p>
+    </header>
 
-      <!-- 左側：入力 -->
-      <div class="box">
-        <div class="grid grid-cols-2 gap-3">
-          <label class="label">自己資金（万円）</label>
-          <input id="self_man" type="number" step="0.1" class="valuebox" placeholder="例：300"/>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          <label class="label">月々の支払可能額（万円）</label>
-          <input id="monthly_man" type="number" step="0.1" class="valuebox" placeholder="例：10"/>
+      <!-- 左：入力 -->
+      <section class="card card-pad">
+        <h2 class="label-sm mb-4">条件入力</h2>
 
-          <label class="label">金利（%）</label>
-          <input id="rate_percent" type="number" step="0.01" class="valuebox" placeholder="例：0.8"/>
-
-          <label class="label">借入期間（年）</label>
-          <input id="years" type="number" step="1" class="valuebox" placeholder="例：35"/>
-
-          <label class="label">必要㎡数</label>
-          <input id="area_need_m2" type="number" step="1" class="valuebox" placeholder="例：60"/>
-
-          <label class="label">ボーナス時返済額（万円/回）</label>
-          <input id="bonus_man" type="number" step="0.1" class="valuebox" placeholder="例：10"/>
-        </div>
-
-        <div class="mt-3">
-          <span class="label">リノベ方式</span>
-          <div class="flex flex-wrap gap-4 items-end">
-            <label class="inline-flex items-center gap-1">
-              <input type="radio" name="reno" value="full" checked>
-              <span>フル</span>
-            </label>
-
-            <label class="inline-flex items-center gap-1">
-              <input type="radio" name="reno" value="manual">
-              <span>手入力</span>
-            </label>
-
-            <input id="reno_cost_input_man" type="number" step="0.1"
-                   class="valuebox manual-input hidden ml-auto" placeholder="例：800" />
+        <div class="grid grid-cols-2 gap-x-4 gap-y-4">
+          <div>
+            <label class="field-label block mb-1.5" for="self_man">自己資金（万円）</label>
+            <input id="self_man" type="number" step="0.1" class="field-input num" placeholder="例：300"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="monthly_man">月々の支払可能額（万円）</label>
+            <input id="monthly_man" type="number" step="0.1" class="field-input num" placeholder="例：10"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="rate_percent">金利（%）</label>
+            <input id="rate_percent" type="number" step="0.01" class="field-input num" placeholder="例：0.8"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="years">借入期間（年）</label>
+            <input id="years" type="number" step="1" class="field-input num" placeholder="例：35"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="area_need_m2">必要㎡数</label>
+            <input id="area_need_m2" type="number" step="1" class="field-input num" placeholder="例：60"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="bonus_man">ボーナス時返済額（万円/回）</label>
+            <input id="bonus_man" type="number" step="0.1" class="field-input num" placeholder="例：10"/>
           </div>
         </div>
 
-        <button id="calc_btn" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+        <div class="mt-5 pt-5 border-t border-slate-100">
+          <span class="field-label block mb-2">リノベ方式</span>
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="reno" value="full" class="accent-emerald-600" checked>
+              <span class="text-sm">フル</span>
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="reno" value="manual" class="accent-emerald-600">
+              <span class="text-sm">手入力</span>
+            </label>
+            <input id="reno_cost_input_man" type="number" step="0.1"
+                   class="field-input num reno-manual-input hidden ml-auto"
+                   placeholder="例：800" />
+          </div>
+        </div>
+
+        <button id="calc_btn" type="button" class="btn-primary mt-5 w-full md:w-auto">
           計算する
         </button>
 
-        <div class="text-sm text-gray-500 mt-2">
-          ※ 諸費用率は現在 <b>0.0800</b>（≒8.0%）に設定。
-        </div>
-      </div>
+        <p class="text-xs text-slate-400 mt-3">
+          ※ 諸費用率は <b class="text-slate-500">8.0%</b> に設定されています。
+        </p>
+      </section>
 
-      <!-- 右側：結果 -->
-      <div class="flex flex-col gap-4">
+      <!-- 右：結果 -->
+      <section class="flex flex-col gap-4">
 
-        <div class="grid grid-cols-2 gap-4">
-
-          <div class="box">
-            <div class="label">総借入額（万円）</div>
-            <input id="total_loan" type="text" inputmode="decimal"
-                   class="valuebox kpi kpi-input" placeholder="-" />
+        <!-- ヒーロー：購入可能物件価格 -->
+        <div class="card card-pad" style="background:linear-gradient(135deg,#ffffff 0%,#ECFDF5 100%);">
+          <div class="label-sm text-emerald-700 mb-2">購入可能物件価格</div>
+          <div class="flex items-baseline">
+            <span id="buyable" class="hero-num num">-</span>
+            <span class="hero-unit">万円</span>
           </div>
-
-          <div class="box">
-            <div class="label">リノベ費（税抜・万円）</div>
-            <div id="reno_cost" class="valuebox kpi">-</div>
-          </div>
-
-          <div class="box">
-            <div class="label">リノベ費（税込10%・万円）</div>
-            <div id="reno_cost_tax_incl" class="valuebox kpi">-</div>
-          </div>
-
-          <div class="box">
-            <div class="label">諸費用（万円）</div>
-            <div id="fee_cost" class="valuebox kpi">-</div>
-          </div>
-
-          <div class="box">
-            <div class="label">購入可能物件価格（万円）</div>
-            <div id="buyable" class="valuebox kpi text-emerald-600">-</div>
-          </div>
-
+          <p id="buyable_breakdown" class="text-xs text-slate-500 mt-3">
+            条件を入力して「計算する」を押すと、ここに内訳が表示されます。
+          </p>
         </div>
 
-        <div class="box">
-          <textarea id="memo_text" class="w-full p-3 border rounded"
-                    style="min-height:150px;"
+        <!-- 内訳：3カード -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+          <div class="card card-pad">
+            <div class="label-sm mb-2">総借入額</div>
+            <div class="flex items-baseline gap-1">
+              <input id="total_loan" type="text" inputmode="decimal"
+                     class="kpi-num num bg-transparent border-0 outline-none w-full focus:bg-slate-50 rounded px-1 -ml-1"
+                     placeholder="-" />
+              <span class="text-sm text-slate-500">万円</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">直接編集して逆算も可</p>
+          </div>
+
+          <div class="card card-pad">
+            <div class="label-sm mb-2">諸費用</div>
+            <div class="flex items-baseline gap-1">
+              <span id="fee_cost" class="kpi-num num">-</span>
+              <span class="text-sm text-slate-500">万円</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">物件価格 × 8%</p>
+          </div>
+
+          <div class="card card-pad">
+            <div class="label-sm mb-2 flex items-center gap-1.5">
+              リノベ費
+              <span id="reno_tip" class="info-tip" tabindex="0" data-tip="税抜: -">i</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="reno_cost_tax_incl" class="kpi-num num">-</span>
+              <span class="text-sm text-slate-500">万円</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">税込（10%）</p>
+            <span id="reno_cost" class="hidden"></span>
+          </div>
+
+        </div>
+
+        <!-- メモ：折りたたみ -->
+        <details class="card card-pad">
+          <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 select-none">
+            <span class="chevron text-slate-400">▶</span>
+            <span>メモ</span>
+            <span class="text-xs text-slate-400 font-normal ml-1">（内見の所感、優先順位など）</span>
+          </summary>
+          <textarea id="memo_text"
+                    class="w-full mt-3 p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                    style="min-height:140px;"
                     placeholder="例：内見の所感、優先順位、気づき・要望など自由に記入"></textarea>
-        </div>
+        </details>
 
-      </div>
+      </section>
 
     </div>
 
-    <!-- フッター：PCは右端ラインに合わせて右寄せ／スマホは最下部センター -->
-    <!-- ロゴは少し小さく＆少し上（= 余白を下に足して持ち上げる） -->
-    <footer class="mt-4 pb-4">
-      <div class="max-w-6xl mx-auto">
-        <div class="flex justify-center md:justify-end items-center">
-          <img src="/static/SHロゴ横長.png"
-               alt="SIMPLE HOUSE logo"
-               class="h-8 md:h-9 opacity-90" />
-        </div>
+    <footer class="mt-8 pb-4">
+      <div class="flex justify-center md:justify-end items-center">
+        <img src="/static/SHロゴ横長.png"
+             alt="SIMPLE HOUSE logo"
+             class="h-8 md:h-9 opacity-90" />
       </div>
     </footer>
 
@@ -253,6 +403,9 @@ def root():
     }
     function getLoan(){
       return parseFloat(normalizeNum(document.getElementById("total_loan").value));
+    }
+    function fmt(v){
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 });
     }
 
     // リノベ方式の手入力欄表示切替
@@ -271,7 +424,6 @@ def root():
 
     document.getElementById("calc_btn").addEventListener("click", async ()=>{
       const mode = document.querySelector("input[name='reno']:checked").value;
-
       const loanEd = getLoan();
       const inputs = {
         self_man: n("self_man"),
@@ -300,20 +452,23 @@ def root():
       }
 
       // 表示反映
-      document.getElementById("total_loan").value =
-        res.total_loan_man.toLocaleString(undefined,{maximumFractionDigits:1});
+      document.getElementById("total_loan").value = fmt(res.total_loan_man);
+      document.getElementById("reno_cost").textContent = fmt(res.reno_cost_man);
+      document.getElementById("reno_cost_tax_incl").textContent = fmt(res.reno_cost_tax_incl_man);
+      document.getElementById("fee_cost").textContent = fmt(res.fee_man);
+      document.getElementById("buyable").textContent = fmt(res.purchasable_price_man);
 
-      document.getElementById("reno_cost").textContent =
-        res.reno_cost_man.toLocaleString(undefined,{maximumFractionDigits:1});
+      // ツールチップに税抜を反映
+      document.getElementById("reno_tip").setAttribute(
+        "data-tip", "税抜: " + fmt(res.reno_cost_man) + " 万円"
+      );
 
-      document.getElementById("reno_cost_tax_incl").textContent =
-        res.reno_cost_tax_incl_man.toLocaleString(undefined,{maximumFractionDigits:1});
-
-      document.getElementById("fee_cost").textContent =
-        res.fee_man.toLocaleString(undefined,{maximumFractionDigits:1});
-
-      document.getElementById("buyable").textContent =
-        res.purchasable_price_man.toLocaleString(undefined,{maximumFractionDigits:1});
+      // 内訳テキスト
+      document.getElementById("buyable_breakdown").textContent =
+        "自己資金 " + fmt(n("self_man")) +
+        " + 借入 " + fmt(res.total_loan_man) +
+        " − リノベ " + fmt(res.reno_cost_tax_incl_man) +
+        " − 諸費用 " + fmt(res.fee_man) + " 万円";
 
       // 総額入力→月々逆算のとき、月々欄へ反映
       if(res.monthly_man_out !== undefined){
