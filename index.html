@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>中古×リノベ 資金計画シミュレーター</title>
+  <meta name="description" content="自己資金・月々の支払可能額・金利などから、購入可能な物件価格を逆算するシミュレーター。" />
+  <link rel="icon" href="assets/sh-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body class="antialiased">
+
+  <div class="max-w-6xl mx-auto px-4 py-6 md:py-8">
+
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
+        中古×リノベ 資金計画シミュレーター
+      </h1>
+      <p class="mt-1 text-sm text-slate-500">
+        条件を入力すると、購入可能な物件価格を自動で逆算します。
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+      <!-- 左：入力 -->
+      <section class="card card-pad">
+        <h2 class="label-sm mb-4">条件入力</h2>
+
+        <div class="grid grid-cols-2 gap-x-4 gap-y-4">
+          <div>
+            <label class="field-label block mb-1.5" for="self_man">自己資金（万円）</label>
+            <input id="self_man" type="number" step="0.1" class="field-input num" placeholder="例：300"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="monthly_man">月々の支払可能額（万円）</label>
+            <input id="monthly_man" type="number" step="0.1" class="field-input num" placeholder="例：10"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="rate_percent">金利（%）</label>
+            <input id="rate_percent" type="number" step="0.01" class="field-input num" placeholder="例：0.8"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="years">借入期間（年）</label>
+            <input id="years" type="number" step="1" class="field-input num" placeholder="例：35"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="area_need_m2">必要㎡数</label>
+            <input id="area_need_m2" type="number" step="1" class="field-input num" placeholder="例：60"/>
+          </div>
+          <div>
+            <label class="field-label block mb-1.5" for="bonus_man">ボーナス時返済額（万円/回）</label>
+            <input id="bonus_man" type="number" step="0.1" class="field-input num" placeholder="例：10"/>
+          </div>
+        </div>
+
+        <div class="mt-5 pt-5 border-t border-slate-100">
+          <span class="field-label block mb-2">リノベ方式</span>
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="reno" value="full" class="accent-emerald-600" checked>
+              <span class="text-sm">フル</span>
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="reno" value="manual" class="accent-emerald-600">
+              <span class="text-sm">手入力</span>
+            </label>
+            <label class="sr-only" for="reno_cost_input_man">リノベ費（万円・税抜）</label>
+            <input id="reno_cost_input_man" type="number" step="0.1"
+                   class="field-input num reno-manual-input hidden ml-auto"
+                   placeholder="例：800" />
+          </div>
+        </div>
+
+        <button id="calc_btn" type="button" class="btn-primary mt-5 w-full md:w-auto">
+          計算する
+        </button>
+
+        <p id="calc_error" class="hidden text-sm text-red-600 mt-3" role="alert"></p>
+
+        <p class="text-xs text-slate-400 mt-3">
+          ※ 諸費用率は <b class="text-slate-500">8.0%</b> に設定されています。
+        </p>
+      </section>
+
+      <!-- 右：結果 -->
+      <section class="flex flex-col gap-4">
+
+        <!-- ヒーロー：購入可能物件価格 -->
+        <div class="card card-pad" style="background:linear-gradient(135deg,#ffffff 0%,#ECFDF5 100%);">
+          <div class="label-sm text-emerald-700 mb-2">購入可能物件価格</div>
+          <div class="flex items-baseline">
+            <span id="buyable" class="hero-num num">-</span>
+            <span class="hero-unit">万円</span>
+          </div>
+          <p id="buyable_breakdown" class="text-xs text-slate-500 mt-3">
+            条件を入力して「計算する」を押すと、ここに内訳が表示されます。
+          </p>
+        </div>
+
+        <!-- 内訳：3カード -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+          <div class="card card-pad">
+            <div class="label-sm mb-2">総借入額</div>
+            <div class="flex items-baseline gap-1">
+              <label class="sr-only" for="total_loan">総借入額（万円）</label>
+              <input id="total_loan" type="text" inputmode="decimal"
+                     class="kpi-num num bg-transparent border-0 outline-none w-full focus:bg-slate-50 rounded px-1 -ml-1"
+                     placeholder="-" />
+              <span class="text-sm text-slate-500 shrink-0 whitespace-nowrap">万円</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">直接編集して逆算も可</p>
+          </div>
+
+          <div class="card card-pad">
+            <div class="label-sm mb-2">諸費用</div>
+            <div class="flex items-baseline gap-1">
+              <span id="fee_cost" class="kpi-num num">-</span>
+              <span class="text-sm text-slate-500">万円</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">物件価格 × 8%</p>
+          </div>
+
+          <div class="card card-pad">
+            <div class="label-sm mb-2 flex items-center gap-1.5">
+              リノベ費
+              <span id="reno_tip" class="info-tip" tabindex="0" data-tip="税抜: -">i</span>
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span id="reno_cost_tax_incl" class="kpi-num num">-</span>
+              <span class="text-sm text-slate-500">万円</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">税込（10%）</p>
+            <span id="reno_cost" class="hidden"></span>
+          </div>
+
+        </div>
+
+        <!-- メモ：折りたたみ -->
+        <details class="card card-pad">
+          <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700 select-none">
+            <span class="chevron text-slate-400">▶</span>
+            <span>メモ</span>
+            <span class="text-xs text-slate-400 font-normal ml-1">（内見の所感、優先順位など）</span>
+          </summary>
+          <label class="sr-only" for="memo_text">メモ</label>
+          <textarea id="memo_text"
+                    class="w-full mt-3 p-3 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                    style="min-height:140px;"
+                    placeholder="例：内見の所感、優先順位、気づき・要望など自由に記入"></textarea>
+        </details>
+
+      </section>
+
+    </div>
+
+    <footer class="mt-8 pb-4">
+      <div class="flex justify-center md:justify-end items-center">
+        <img src="assets/sh-logo.png"
+             alt="SIMPLE HOUSE logo"
+             width="220" height="36"
+             class="h-8 md:h-9 w-auto opacity-90" />
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="assets/calc.js"></script>
+  <script src="assets/app.js"></script>
+
+</body>
+</html>
